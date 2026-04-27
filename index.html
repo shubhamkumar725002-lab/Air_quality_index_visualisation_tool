@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Advanced AQI Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+body{
+    margin:0;
+    font-family: 'Segoe UI';
+    background: radial-gradient(circle at top, #0f2027, #203a43, #2c5364);
+    color:white;
+}
+
+/* NAVBAR */
+.navbar{
+    display:flex;
+    justify-content:space-between;
+    padding:15px 30px;
+    background:linear-gradient(90deg,#00c6ff,#0072ff);
+}
+
+.logo{
+    font-size:26px;
+    font-weight:bold;
+}
+
+.search{
+    width:40%;
+    border:none;
+    border-radius:20px;
+    padding:10px;
+}
+
+button{
+    background:#00ffcc;
+    border:none;
+    padding:10px 20px;
+    border-radius:20px;
+    font-weight:bold;
+    cursor:pointer;
+}
+
+/* GRID */
+.grid{
+    display:grid;
+    grid-template-columns: repeat(auto-fit,minmax(280px,1fr));
+    gap:20px;
+    padding:20px;
+}
+
+/* CARD */
+.card{
+    background: rgba(255,255,255,0.08);
+    border-radius:20px;
+    padding:20px;
+    backdrop-filter: blur(12px);
+    box-shadow:0 0 15px rgba(0,255,255,0.2);
+    transition:0.3s;
+}
+
+.card:hover{
+    transform:translateY(-5px);
+    box-shadow:0 0 25px rgba(0,255,255,0.5);
+}
+
+/* AQI BIG */
+.aqi{
+    font-size:70px;
+    color:#ff9f43;
+}
+
+.status{
+    background:#ff9f43;
+    padding:5px 15px;
+    border-radius:10px;
+}
+
+/* POLLUTANT COLORS */
+.pm25{color:#ff6b6b;}
+.pm10{color:#feca57;}
+.no2{color:#48dbfb;}
+
+/* SMALL TEXT */
+.small{
+    opacity:0.7;
+}
+
+/* CITY CARDS */
+.city{
+    padding:10px;
+    border-radius:10px;
+    margin:5px;
+    display:flex;
+    justify-content:space-between;
+    background:linear-gradient(45deg,#00c6ff,#0072ff);
+}
+
+/* HEALTH */
+.health{
+    font-size:14px;
+    line-height:1.6;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="navbar">
+    <div class="logo">AQI+</div>
+    <input class="search" placeholder="Search city...">
+    <button onclick="loadData()">Refresh</button>
+</div>
+
+<div class="grid">
+
+<!-- AQI CARD -->
+<div class="card">
+    <h2>🌍 AQI</h2>
+    <div class="aqi" id="aqi">--</div>
+    <div class="status" id="status">--</div>
+</div>
+
+<!-- POLLUTANTS -->
+<div class="card">
+    <h2>🧪 Pollutants</h2>
+    <p class="pm25">PM2.5: <span id="pm25"></span></p>
+    <p class="pm10">PM10: <span id="pm10"></span></p>
+    <p class="no2">NO2: <span id="no2"></span></p>
+</div>
+
+<!-- WEATHER -->
+<div class="card">
+    <h2>🌤 Weather</h2>
+    <p>🌡 30°C</p>
+    <p>💧 30%</p>
+    <p>🌬 6 km/h</p>
+</div>
+
+<!-- HEALTH CARD -->
+<div class="card health">
+    <h2>💡 Health Advice</h2>
+    <p id="health"></p>
+</div>
+
+<!-- BAR CHART -->
+<div class="card">
+    <h2>📊 Pollutants Chart</h2>
+    <canvas id="barChart"></canvas>
+</div>
+
+<!-- LINE CHART -->
+<div class="card">
+    <h2>📈 AQI Trend</h2>
+    <canvas id="lineChart"></canvas>
+</div>
+
+<!-- DOUGHNUT -->
+<div class="card">
+    <h2>🧩 Composition</h2>
+    <canvas id="pieChart"></canvas>
+</div>
+
+<!-- CITY COMPARISON -->
+<div class="card">
+    <h2>🏙 City Comparison</h2>
+    <div id="cities"></div>
+</div>
+
+</div>
+
+<script>
+
+// AQI logic
+function calcAQI(p1,p2,p3){
+    return Math.round(p1*0.5 + p2*0.3 + p3*0.2);
+}
+
+function status(aqi){
+    if(aqi<50) return "Good";
+    if(aqi<100) return "Moderate";
+    if(aqi<150) return "Poor";
+    return "Severe";
+}
+
+function healthAdvice(aqi){
+    if(aqi<50) return "Air quality is excellent.";
+    if(aqi<100) return "Sensitive people should limit outdoor activity.";
+    if(aqi<150) return "Wear mask & avoid long exposure.";
+    return "Stay indoors. Health risk!";
+}
+
+let bar,line,pie;
+
+function loadData(){
+
+    let pm25=Math.floor(Math.random()*200);
+    let pm10=Math.floor(Math.random()*200);
+    let no2=Math.floor(Math.random()*100);
+
+    let aqi=calcAQI(pm25,pm10,no2);
+
+    document.getElementById("pm25").innerText=pm25;
+    document.getElementById("pm10").innerText=pm10;
+    document.getElementById("no2").innerText=no2;
+
+    document.getElementById("aqi").innerText=aqi;
+    document.getElementById("status").innerText=status(aqi);
+    document.getElementById("health").innerText=healthAdvice(aqi);
+
+    // BAR
+    if(bar) bar.destroy();
+    bar=new Chart(barChart,{
+        type:'bar',
+        data:{
+            labels:["PM2.5","PM10","NO2"],
+            datasets:[{data:[pm25,pm10,no2]}]
+        }
+    });
+
+    // LINE
+    if(line) line.destroy();
+    line=new Chart(lineChart,{
+        type:'line',
+        data:{
+            labels:["1","2","3","4","5","6","7"],
+            datasets:[{
+                data:Array.from({length:7},()=>Math.random()*200)
+            }]
+        }
+    });
+
+    // PIE
+    if(pie) pie.destroy();
+    pie=new Chart(pieChart,{
+        type:'doughnut',
+        data:{
+            labels:["PM2.5","PM10","NO2"],
+            datasets:[{data:[pm25,pm10,no2]}]
+        }
+    });
+
+    // CITY
+    let list=["Delhi","Mumbai","Kolkata","Chennai","Bangalore"];
+    let html="";
+    list.forEach(c=>{
+        html+=`<div class="city">${c}<span>${Math.floor(Math.random()*200)}</span></div>`;
+    });
+    cities.innerHTML=html;
+}
+
+loadData();
+
+</script>
+
+</body>
+</html>
